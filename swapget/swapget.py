@@ -22,6 +22,7 @@ class UniswapPair:
         except BadFunctionCallOutput:
             return False
         except ContractLogicError:
+            # Если контракт вызвался, но ошибка в обработке - значит пара существует всё равно
             return True
 
     def binary_search_pair_existence(self, token0_address, token1_address, start_block, end_block):
@@ -49,3 +50,18 @@ class UniswapPair:
 
         return left, right if self.pair_exists_in_block(pair_address, left) and \
             self.pair_exists_in_block(pair_address, right) else -1
+
+    def get_reserves_from_block_range(self, token0, token1, start, end):
+        data = {}
+        token0_address = Web3.to_checksum_address(token0)
+        token1_address = Web3.to_checksum_address(token1)
+        pair_address = self.get_pair_address(token0_address, token1_address)
+        pair_contract = self.w3.eth.contract(address=pair_address, abi=self.pair_abi)
+        for i in range(start, end + 1):
+            try:
+                data[i] = pair_contract.functions.getReserves().call(block_identifier=i)
+            except BadFunctionCallOutput:
+                return -1
+        return data
+
+

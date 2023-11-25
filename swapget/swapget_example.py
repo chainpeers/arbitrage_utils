@@ -22,11 +22,14 @@ token1_address = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
 # Начальный и конечный блоки для поиска
 start_block = 0
 end_block = uniswap.w3.eth.block_number
-
+# Получение диапазона пары в отрезке блоков
 blocks_with_pair = uniswap.binary_search_pair_existence(token0_address, token1_address, start_block, end_block)
 
 if blocks_with_pair == -1:
     print(f'The pair did not exist in any block between {start_block} and {end_block}')
 
 else:
+
     print(f'The pair first existed in blocks from {blocks_with_pair[0]} to {blocks_with_pair[1]}')
+    # Получения всех резервов диапазона
+    print(uniswap.get_reserves_from_block_range(token0_address,token1_address,0, 10))
