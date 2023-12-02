@@ -1,5 +1,6 @@
 from web3 import Web3
 from web3.exceptions import BadFunctionCallOutput, ContractLogicError
+from database import save_to_db
 
 
 class UniswapPair:
@@ -60,6 +61,7 @@ class UniswapPair:
         for i in range(start, end + 1):
             try:
                 data[i] = pair_contract.functions.getReserves().call(block_identifier=i)
+                save_to_db(int(i), str(token0), str(data[i][0]), str(token1), str(data[i][1]))
             except BadFunctionCallOutput:
                 return -1
         return data
