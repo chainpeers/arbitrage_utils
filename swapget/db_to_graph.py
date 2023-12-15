@@ -4,15 +4,14 @@ import networkx as nx
 
 
 def create_graph_from_db(engine, block_number: str, tokens_table: dict) -> nx.DiGraph:
-    session = Session(bind=engine)
-    result = session.query(ReservesData).filter(ReservesData.block_number == block_number)
+    with Session(bind=engine) as session:
+        result = session.query(ReservesData).filter(ReservesData.block_number == block_number)
 
-    graph = nx.DiGraph()
-
-    for row in result:
-        token0_index = tokens_table[row.token0_address]
-        token1_index = tokens_table[row.token1_address]
-        weight = int(row.token0_reserve) / int(row.token1_reserve)
-        graph.add_edge(token0_index, token1_index, weight=weight)
+        graph = nx.DiGraph()
+        for row in result:
+            token0_index = tokens_table[row.token0_address]
+            token1_index = tokens_table[row.token1_address]
+            weight = int(row.token0_reserve) / int(row.token1_reserve)
+            graph.add_edge(token0_index, token1_index, weight=weight)
 
     return graph
