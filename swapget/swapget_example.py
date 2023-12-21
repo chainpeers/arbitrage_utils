@@ -1,6 +1,7 @@
 from swapget import UniswapPair
 from sqlalchemy.orm import Session
 from database import ReservesData, engine
+from find_cycles import CycleExplorer
 import json
 
 provider = 'Your Provider'
@@ -24,6 +25,7 @@ token1_address = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
 # Начальный и конечный блоки для поиска
 start_block = uniswap.w3.eth.block_number - 10
 end_block = uniswap.w3.eth.block_number
+print(start_block)
 # Получение диапазона пары в отрезке блоков
 blocks_with_pair = uniswap.binary_search_pair_existence(token0_address, token1_address, start_block, end_block)
 
@@ -47,3 +49,10 @@ else:
 
     # Закрываем сессию
     session.close()
+
+cycleexp = CycleExplorer()
+data = cycleexp.find_positive_cycles_from_block_range(18748900, 18749109)
+print(len(data))
+for i, k in data.items():
+
+    print(i, k)
