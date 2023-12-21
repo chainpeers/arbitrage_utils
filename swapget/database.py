@@ -20,7 +20,7 @@ def bi_c(element, compiler, **kw):
 
 
 class ReservesData(Base):
-    __tablename__ = 'reserves'
+    __tablename__ = 'uniswappairs'
 
     id = Column(SLBigInteger(), primary_key=True)
     block_number = Column(String)
@@ -30,7 +30,7 @@ class ReservesData(Base):
     token1_reserve = Column(String)
 
 
-engine = create_engine('sqlite:///mydatabase.db')
+engine = create_engine('sqlite:///pairdata.db')
 Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
@@ -38,12 +38,19 @@ Session = sessionmaker(bind=engine)
 
 def save_to_db(block_number, token0_address, token0_reserve, token1_address, token1_reserve):
     session = Session()
-    new_data = ReservesData(
-        block_number=block_number,
-        token0_address=token0_address,
-        token0_reserve=token0_reserve,
-        token1_address=token1_address,
-        token1_reserve=token1_reserve
-    )
-    session.add(new_data)
-    session.commit()
+    exists = session.query(session.query(ReservesData).filter_by(block_number=block_number,
+                                                                 token0_address=token0_address,
+                                                                 token0_reserve=token0_reserve,
+                                                                 token1_address=token1_address,
+                                                                 token1_reserve=token1_reserve).exists()).scalar()
+    if not exists:
+        new_data = ReservesData(
+            block_number=block_number,
+            token0_address=token0_address,
+            token0_reserve=token0_reserve,
+            token1_address=token1_address,
+            token1_reserve=token1_reserve
+        )
+        session.add(new_data)
+        session.commit()
+

@@ -10,9 +10,11 @@ tokens = ['0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',  # ETH
           '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2',  # MKR
           '0xc00e94Cb662C3520282E6f5717214004A7f2c888',  # COMP
           '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e',  # YFI
-          '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9']  # AAVE
+          '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9',
+          '0xB8c77482e45F1F44dE1745F52C74426C631bDD52',  # BNB
+          '0x50327c6c5a14DCaDE707ABad2E27eB517df87AB5']  # AAVE
 
-provider = 'any'
+provider = 'Provider'
 factory_address = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
 factory_abi = '[{"constant":true,"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"getPair","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"}]'
 with open('pairabi.json') as f:
@@ -38,3 +40,6 @@ class FillDb:
                     self.uniswap.get_reserves_from_block_range(tkn_ad1, tkn_ad2, blocks_with_pair[0],
                                                                blocks_with_pair[1])
 
+
+fill = FillDb(provider, factory_address, factory_abi, pair_abi, 18748900, 18749109)
+fill.fill(tokens)
