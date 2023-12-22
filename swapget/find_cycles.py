@@ -2,6 +2,7 @@ import networkx as nx
 from database import engine
 from typing import List, Optional
 from db_to_graph import create_graph_from_db
+from calculate import UniswapCalculator
 
 tokens_table = {'0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE': 'ETH',  # ETH
                 '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984': 'UNI',  # UNI
@@ -36,6 +37,7 @@ class CycleExplorer:
 
     def multiply_edge_weights_of_all(graph: nx.DiGraph, cycles: Optional[List[List[str]]], start_val: int) -> Optional[List[List]]:
         data = []
+        calc = UniswapCalculator()
         if not cycles:
             return None
         for vertices in cycles:
@@ -43,7 +45,7 @@ class CycleExplorer:
             for i in range(len(vertices) - 1):
                 edge_data = graph.get_edge_data(vertices[i], vertices[i + 1])
                 if edge_data is not None and 'weight' in edge_data:
-                    result *= edge_data['weight']
+                    result = calc.calculate_output_amount(result, edge_data['weight'][0], edge_data['weight'][1])
                 else:
                     raise ValueError(f"No weight found for edge between {vertices[i]} and {vertices[i + 1]}")
             print(result, vertices)
@@ -51,11 +53,12 @@ class CycleExplorer:
         return data
 
     def muiliply_edge_weights_of_one(self, graph: nx.DiGraph, cycle: Optional[List[str]], start_val: int):
+        calc = UniswapCalculator()
         result = start_val
         for i in range(len(cycle) - 1):
             edge_data = graph.get_edge_data(cycle[i], cycle[i + 1])
             if edge_data is not None and 'weight' in edge_data:
-                result *= edge_data['weight']
+                result = calc.calculate_output_amount(result, edge_data['weight'][0], edge_data['weight'][1])
             else:
                 raise ValueError(f"No weight found for edge between {cycle[i]} and {cycle[i + 1]}")
         result = {str(cycle): {"change": result - start_val, "token": cycle[0]}}
