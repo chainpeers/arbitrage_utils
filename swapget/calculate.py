@@ -19,22 +19,3 @@ class UniswapCalculator:
 
         return float(output_amount)
 
-    def optimize_input_amount(self, initial_input, reserve1, reserve2):
-        # Start with the initial input amount
-        input_amount = initial_input
-        previous_output = 0
-        while True:
-            # Calculate the output amount for the current input amount
-            output_amount = self.calculate_output_amount(input_amount, reserve1, reserve2)
-
-            # If the output amount is not increasing, stop
-            if output_amount <= previous_output:
-                break
-
-            # Otherwise, increase the input amount slightly
-            input_amount += 0.01
-
-
-            previous_output = output_amount
-
-        return input_amount
