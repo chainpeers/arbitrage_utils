@@ -2,6 +2,7 @@ import networkx as nx
 from database import engine
 from typing import List, Optional
 from db_to_graph import create_graph_from_db
+from calculate import UniswapCalculator
 
 tokens_table = {'0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE': 'ETH',  # ETH
                 '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984': 'UNI',  # UNI
@@ -26,7 +27,7 @@ class CycleExplorer:
     def evaluate_cycle_for_all_tokens(self, cycle: List[str], graph, block_number):
         shifted_cycle = cycle
         for i in range(len(cycle)):
-            cycle_info = self.muiliply_edge_weights_of_one(graph, shifted_cycle, 100)
+            cycle_info = self.multiply_edge_weights_of_one(graph, shifted_cycle, 100)
             shifted_cycle = shifted_cycle[-1:] + shifted_cycle[:-1]
             try:
                 self.blocks_cycle_info[str(block_number)].append(cycle_info)
@@ -36,6 +37,7 @@ class CycleExplorer:
 
     def multiply_edge_weights_of_all(graph: nx.DiGraph, cycles: Optional[List[List[str]]], start_val: int) -> Optional[List[List]]:
         data = []
+        calc = UniswapCalculator()
         if not cycles:
             return None
         for vertices in cycles:
@@ -43,24 +45,51 @@ class CycleExplorer:
             for i in range(len(vertices) - 1):
                 edge_data = graph.get_edge_data(vertices[i], vertices[i + 1])
                 if edge_data is not None and 'weight' in edge_data:
-                    result *= edge_data['weight']
+                    result = calc.calculate_output_amount(result, edge_data['weight'][0], edge_data['weight'][1])
                 else:
                     raise ValueError(f"No weight found for edge between {vertices[i]} and {vertices[i + 1]}")
             print(result, vertices)
             data.append([result, vertices])
         return data
 
-    def muiliply_edge_weights_of_one(self, graph: nx.DiGraph, cycle: Optional[List[str]], start_val: int):
-        result = start_val
+    def multiply_edge_weights_of_one(self, graph: nx.DiGraph, cycle: Optional[List[str]], start_val: int):
+        calc = UniswapCalculator()
+        if cycle[0] != 'USDC':
+            token_usd_edge = graph.get_edge_data(cycle[0], 'USDC')
+            token_amount = calc.calculate_output_amount(start_val, token_usd_edge['weight'][1], token_usd_edge['weight'][0], fee=0)
+        else:
+            token_amount = start_val
+        result = token_amount
         for i in range(len(cycle) - 1):
             edge_data = graph.get_edge_data(cycle[i], cycle[i + 1])
             if edge_data is not None and 'weight' in edge_data:
-                result *= edge_data['weight']
+                result = calc.calculate_output_amount(result, edge_data['weight'][0], edge_data['weight'][1])
             else:
                 raise ValueError(f"No weight found for edge between {cycle[i]} and {cycle[i + 1]}")
         result = {str(cycle): {"change": result - start_val, "token": cycle[0]}}
 
         return result
+
+    def find_optimal_input_value(self, graph: nx.DiGraph, cycle: Optional[List[str]], bottom=0, top=1000, iterations=10):
+        it = 0
+        while it < iterations:
+            middle = (bottom + top) // 2
+            result_mid = self.multiply_edge_weights_of_one(graph, cycle, middle)
+            result_end = self.multiply_edge_weights_of_one(graph, cycle, top)
+
+            if result_mid[str(cycle)]["change"] > result_end[str(cycle)]["change"]:
+                top = middle
+            else:
+                bottom = middle
+
+            it += 1
+
+        # Determine which of the two bounds is the optimal value
+        final_result = self.multiply_edge_weights_of_one(graph, cycle, bottom)
+        if final_result[str(cycle)]["change"] > result_mid[str(cycle)]["change"]:
+            return [final_result, bottom]
+        else:
+            return [result_mid, middle]
 
     def gather_all_info_in_block_range(self, start, end):
         for block_number in range(start, end):
@@ -73,16 +102,15 @@ class CycleExplorer:
         data = {}
         for block_number in range(start, end):
             graph = create_graph_from_db(engine, str(block_number), tokens_table)
-            base = 100
             cycles = self.find_cycles(graph)
 
             for cycle in cycles:
-                result = self.muiliply_edge_weights_of_one(graph, cycle, base)
+                result, base = self.find_optimal_input_value(graph, cycle)
                 if int(result[str(cycle)]["change"]) > base:
                     try:
-                        data[str(cycle)] += 1
+                        data[str(cycle) + ' ' + str(base)] += 1
 
                     except KeyError:
-                        data[str(cycle)] = 1
+                        data[str(cycle) + ' ' + str(base)] = 1
         return data
 
