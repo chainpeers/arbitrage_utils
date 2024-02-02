@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, BigInteger, create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.compiler import compiles
+from calculate import UniswapCalculator
 
 Base = declarative_base()
 
@@ -54,4 +55,16 @@ def save_to_db(block_number, token0_address, token0_reserve, token1_address, tok
         )
         session.add(new_data)
         session.commit()
+
+
+def print_reserves_data():
+    session = Session()
+    reserves_data = session.query(ReservesData).all()
+    calc = UniswapCalculator()
+    for data in reserves_data:
+        print(f"ID: {data.id}, Block Number: {data.block_number}, "
+              f"Token0 Address: {data.token0_address}, Token0 Reserve: {data.token0_reserve}, "
+              f"Token1 Address: {data.token1_address}, Token1 Reserve: {data.token1_reserve}, "
+              f"Swap_100: {calc.calculate_output_amount(100, data.token0_reserve, data.token1_reserve)}")
+
 

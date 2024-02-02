@@ -11,7 +11,7 @@ def create_graph_from_db(engine, block_number: str, tokens_table: dict) -> nx.Di
         for row in result:
             token0_index = tokens_table[row.token0_address]
             token1_index = tokens_table[row.token1_address]
-            weight = [float(row.token0_reserve), float(row.token1_reserve)]
+            weight = [float(row.token0_reserve), float(row.token1_reserve), token0_index]
 
             graph.add_edge(token0_index, token1_index, weight=weight)
 
