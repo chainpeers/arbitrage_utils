@@ -11,7 +11,11 @@ def create_graph_from_db(engine, block_number: str, tokens_table: dict) -> nx.Di
         for row in result:
             token0_index = tokens_table[row.token0_address]
             token1_index = tokens_table[row.token1_address]
-            weight = [float(row.token0_reserve), float(row.token1_reserve), token0_index]
+            weight = {'token0': row.token0_address, 'token1': row.token1_address,
+                      'sqrtPrice': row.sqrtPriceX96,
+                      'decimals0': row.token0_decimals, 'decimals1': row.token1_decimals,
+                      'fee': row.fee,
+                      'pool_address': row.pool_address}
 
             graph.add_edge(token0_index, token1_index, weight=weight)
 
