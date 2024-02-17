@@ -1,6 +1,9 @@
 from find_cycles import CycleExplorer
 import json
 from fill_db_with_pair_info import FillDb
+from stat_database import print_chain_stats
+from database import print_reserves_data
+from calculate import UniswapCalculator
 
 TOKENS_TBL = {'0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE': 'ETH',  # ETH
                 '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984': 'UNI',  # UNI
@@ -32,11 +35,16 @@ with open('abi/factory_abi.json') as f:
     factory_abi = json.loads(file_content)
 
 
-db_filler = FillDb(provider, factory_address, factory_abi, pair_abi, token_abi, 19043530, 19043540)
+db_filler = FillDb(provider, factory_address, factory_abi, pair_abi, token_abi, 19105465, 19105467)
 db_filler.fill(TOKENS_TBL)
+
+print_reserves_data()
+
 cycleexp = CycleExplorer(TOKENS_TBL)
-data = cycleexp.find_positive_cycles_from_block_range(19043530, 19043540, 10)
-for k, i in data.items():
-    print(f'{k}: {i}')
+cycleexp.find_positive_cycles_from_block_range(19105465, 19105467, 10)
+
+print_chain_stats()
+
+
 
 

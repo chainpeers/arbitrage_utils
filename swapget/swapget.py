@@ -26,9 +26,10 @@ class UniswapPair:
             return True
         except BadFunctionCallOutput:
             return False
-        except ContractLogicError:
+        # except ContractLogicError:
             # Если контракт вызвался, но ошибка в обработке - значит пара существует всё равно
-            return True
+
+            # return True
 
     def binary_search_pair_existence(self, token0_address, token1_address, start_block, end_block):
         token0_address = Web3.to_checksum_address(token0_address)
@@ -76,16 +77,19 @@ class UniswapPair:
 
                 decimals_token1 = token1_contract.functions.decimals().call()
 
-                data[i] = pair_contract.functions.getReserves().call(block_identifier=i)
-                #  pair has one order always. need to check who is who
-                if decimals_token0 == pair_contract.functions.decimals().call():
-                    data[i][0] = data[i][0] / (10 ** decimals_token0)
-                    data[i][1] = data[i][1] / (10 ** decimals_token1)
-                else:
-                    data[i][1] = data[i][1] / (10 ** decimals_token0)
-                    data[i][0] = data[i][0] / (10 ** decimals_token1)
+                reserves = pair_contract.functions.getReserves().call(block_identifier=i)
 
-                save_to_db(int(i), str(token0), str(data[i][0]), str(token1), str(data[i][1]))
+                # Determine the order of the tokens based on their addresses
+                if token0_address < token1_address:
+                    res1 = reserves[0] / (10 ** decimals_token0)
+                    res2 = reserves[1] / (10 ** decimals_token1)
+                else:
+                    res1 = reserves[1] / (10 ** decimals_token0)
+                    res2 = reserves[0] / (10 ** decimals_token1)
+
+                # print(decimals_token0, res1,str(token0), decimals_token1, res2, str(token1), str(pair_address))
+
+                save_to_db(int(i), str(token0), str(res1), str(token1), str(res2))
             except BadFunctionCallOutput:
                 return -1
         return data
