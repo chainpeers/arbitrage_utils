@@ -1,20 +1,31 @@
 from web3 import Web3
-from decimal import Decimal
+from decimal import Decimal, getcontext
 
 
 class UniswapCalculator:
 
-    def calculate_output_amount(self, input_amount, reserve1, reserve2, fee=0.003, slippage=0.01):
-        # Convert to decimals for precision
+    def calculate_output_amount(self, token0, token1, input_amount, sqrtPriceX96, token0_decimals, token1_decimals, fee=3000):
+        # Set the precision for Decimal calculations
         input_amount = Decimal(input_amount)
-        reserve1 = Decimal(reserve1)
-        reserve2 = Decimal(reserve2)
-        fee = Decimal(fee)
-        slippage = Decimal(slippage)
+        getcontext().prec = 10
 
-        # Calculate output amount
-        # output_amount = reserve2 - (reserve1 * reserve2) / (reserve1 + input_amount) #  попытка учесть изменение пула после обмена
-        # output_amount = input_amount * (reserve2 / reserve1) #  без feу и slippage
-        output_amount = input_amount * ((reserve2 * (1 - fee)) / (reserve1 * (1 + slippage)))
+        # Convert sqrtPriceX96 from Q96 format to a normal decimal
+        price_ratio = Decimal(sqrtPriceX96) / Decimal(2 ** 96)
+        price_ratio = price_ratio ** 2
 
-        return float(output_amount)
+
+        if token0 < token1:
+            price_ratio = price_ratio / Decimal(10 ** (token1_decimals - token0_decimals))
+            fee_decimal = Decimal(fee) / 1000000
+            output_amount = input_amount * price_ratio * (1 - fee_decimal)
+        else:
+            price_ratio = price_ratio / Decimal(10 ** (token0_decimals - token1_decimals))
+            fee_decimal = Decimal(fee) / 1000000
+            output_amount = input_amount / price_ratio * (1 - fee_decimal)
+
+        return output_amount
+
+calc = UniswapCalculator()
+# print(calc.calculate_output_amount(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48,100, 1583529579904531214868827074486253, 18, 6))
+
+

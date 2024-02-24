@@ -19,5 +19,5 @@ class FillDb:
                     print(f'The pair for {tkn_ad1} and {tkn_ad2} '
                           f'did not exist in any block between {self.start} and {self.end}')
                 else:
-                    self.uniswap.get_reserves_from_block_range(tkn_ad1, tkn_ad2, blocks_with_pair[0],
-                                                               blocks_with_pair[1])
+                    self.uniswap.get_liquidity_from_block_range(tkn_ad1, tkn_ad2, blocks_with_pair[0],
+                                                                blocks_with_pair[1])
