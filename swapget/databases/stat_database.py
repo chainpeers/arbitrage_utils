@@ -11,7 +11,6 @@ class Chain(Base):
     id = Column(Integer, primary_key=True)
     chain = Column(String, unique=True, nullable=False)
     positive_changes_count = Column(Integer, default=0)
-    fee_array = Column(String)
     pool_array = Column(String)
     stats = relationship("Statistic", backref="chain")
 
@@ -29,10 +28,10 @@ class Statistic(Base):
 
 
 def add_chain_stat(chain: str, block_number: int, change: float, base_price: float, final_price: float, token: str,
-                   fee_array, pool_array):
+                   pool_array):
     new_chain = session.query(Chain).filter_by(chain=chain).first()
     if not new_chain:
-        new_chain = Chain(chain=chain, fee_array=fee_array, pool_array=pool_array)
+        new_chain = Chain(chain=chain, pool_array=pool_array)
         session.add(new_chain)
         session.commit()
 
@@ -50,8 +49,8 @@ def print_chain_stats():
     chains = session.query(Chain).all()
     for chain in chains:
         print(f"Chain: {chain.chain}, Positive Changes Count: {chain.positive_changes_count}\n"
-              f"Fees: {chain.fee_array}\n"
               f"Pools: {chain.pool_array}")
+
         statistics = session.query(Statistic).filter_by(chain_id=chain.id).all()
         for statistic in statistics:
             print(f"\tBlock Number: {statistic.block_number}, Change: {statistic.change}, "

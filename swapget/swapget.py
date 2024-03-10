@@ -1,6 +1,6 @@
 from web3 import Web3
-from web3.exceptions import BadFunctionCallOutput, ContractLogicError
-from database import save_to_db
+from web3.exceptions import BadFunctionCallOutput
+from arbitrage_utils.swapget.databases.pair_database import save_to_db
 
 
 class UniswapPair:
@@ -22,18 +22,16 @@ class UniswapPair:
                 pool_contract = self.w3.eth.contract(address=pool_address, abi=self.pool_abi)
                 liq = pool_contract.functions.liquidity().call()
 
-
-                # print(liq, '____', token0_address, token1_address, pool_address)
                 if pool_address is False or liq == 0:
                     continue
                 else:
 
                     pool_array.append([self.factory_contract.functions.getPool(token0_address, token1_address, fee).call(), fee])
 
-
             except Exception as e:
 
                 pass
+
         return pool_array if pool_array else -1
 
     def pool_exists_in_block(self, pool_address, block_number: int) -> bool:
@@ -47,11 +45,10 @@ class UniswapPair:
         except BadFunctionCallOutput:
             return False
 
-
     def binary_search_pair_existence(self, token0_address, token1_address, start_block, end_block):
         token0_address = Web3.to_checksum_address(token0_address)
         token1_address = Web3.to_checksum_address(token1_address)
-        # print(self.get_pool_address(token0_address, token1_address))
+
         if self.get_pool_address(token0_address, token1_address) == -1:
             return -1
         pools = self.get_pool_address(token0_address, token1_address)
@@ -78,12 +75,16 @@ class UniswapPair:
         return left, right if self.pool_exists_in_block(pair_address, left) and \
             self.pool_exists_in_block(pair_address, right) else -1
 
-    def get_liquidity_from_block_range(self, token0: str, token1: str, start: int, end: int):
+    def get_liquidity_from_block_range(self, token0: str, token1: str, start: int, end: int, debug=False):
         erc20_abi = self.token_abi
 
+        debug_out = []
         token0_address = Web3.to_checksum_address(token0)
         token1_address = Web3.to_checksum_address(token1)
         pools = self.get_pool_address(token0_address, token1_address)
+        print(pools)
+        if pools == -1:
+            return -1
         for pool in pools:
 
             pool_address = pool[0]
@@ -106,8 +107,12 @@ class UniswapPair:
                                token1_address=str(token1), token1_decimals=int(decimals_token1),
                                sqrtPriceX96=str(sqrtPriceX96), fee=int(fee),
                                pool_address=str(pool_address))
+                    if debug:
+                        debug_out.append([sqrtPriceX96, pool_address, fee])
+
                 except BadFunctionCallOutput:
                     return -1
+        return debug_out
 
 
 
