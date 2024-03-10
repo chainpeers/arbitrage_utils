@@ -75,12 +75,16 @@ class UniswapPair:
         return left, right if self.pool_exists_in_block(pair_address, left) and \
             self.pool_exists_in_block(pair_address, right) else -1
 
-    def get_liquidity_from_block_range(self, token0: str, token1: str, start: int, end: int):
+    def get_liquidity_from_block_range(self, token0: str, token1: str, start: int, end: int, debug=False):
         erc20_abi = self.token_abi
 
+        debug_out = []
         token0_address = Web3.to_checksum_address(token0)
         token1_address = Web3.to_checksum_address(token1)
         pools = self.get_pool_address(token0_address, token1_address)
+        print(pools)
+        if pools == -1:
+            return -1
         for pool in pools:
 
             pool_address = pool[0]
@@ -103,8 +107,12 @@ class UniswapPair:
                                token1_address=str(token1), token1_decimals=int(decimals_token1),
                                sqrtPriceX96=str(sqrtPriceX96), fee=int(fee),
                                pool_address=str(pool_address))
+                    if debug:
+                        debug_out.append([sqrtPriceX96, pool_address, fee])
+
                 except BadFunctionCallOutput:
                     return -1
+        return debug_out
 
 
 

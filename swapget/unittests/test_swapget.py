@@ -60,6 +60,27 @@ class TestUniswapPair(unittest.TestCase):
 
         self.assertEqual(bi_search_call, (19000000, 19000005))
 
+    def test_get_liquidity_from_block_range(self):
+        uniswap = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
+        get_liq_good_call = uniswap.get_liquidity_from_block_range('0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
+                                                                   '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+                                                                   19000005, 19000006, debug=True)
+        self.assertEqual(get_liq_good_call, [[2226807304819451294225431920,
+                                              '0x57D7d040438730d4029794799dEEd8601E23fF80', 500],
+                                             [2226807304819451294225431920,
+                                              '0x57D7d040438730d4029794799dEEd8601E23fF80', 500],
+                                             [311304595491026851434048245117,
+                                              '0x7cf70eD6213F08b70316bD80F7c2ddDc94E41aC5', 3000],
+                                             [311304595491026851434048245117,
+                                              '0x7cf70eD6213F08b70316bD80F7c2ddDc94E41aC5', 3000],
+                                             [240909345684574701522037830932,
+                                              '0xD6993E525FAdB23971a20bBb057Af9841eAE076F', 10000],
+                                             [240909345684574701522037830932,
+                                              '0xD6993E525FAdB23971a20bBb057Af9841eAE076F', 10000]])
 
+        get_liq_bad_call = uniswap.get_liquidity_from_block_range('0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
+                                                                  '0x6B175474E89094C44Da98b954EedeAC495271d0a',
+                                                                  19000005, 19000006, debug=True)
+        self.assertEqual(get_liq_bad_call, -1)
 if __name__ == '__main__':
     unittest.main()

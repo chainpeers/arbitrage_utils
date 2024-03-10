@@ -1,3 +1,4 @@
+На русском.
 Краткое описание:
 Получение положительных циклов обмена валют в uniswap используя web3.py
 
@@ -27,3 +28,28 @@
 
     В data будет храниться словарь со всеми найденными положительными циклами в пределе блоков и статистикой
 
+
+English
+Brief Description: Obtaining positive exchange cycles in Uniswap using web3.py
+
+How It Works:
+
+1. create Uniswap pairs and extract their details using web3 | swapget.py
+2. add pairs with their details to the database | fill_db_with_pairs.py
+3. transfer pairs from the database to a graph for easier cycle finding | db_to_graph.py
+4. find cycles using the graph framework networkx | find_cycles.py
+5. calculate the values after the exchange in turn using calculate.py for each pair in the cycle and find the optimal input value using binary search
+6. select cycles with a positive difference
+Usage:
+
+1. Specify your mainnet provider in settings.json (for example, https://mainnet.infura.io/v3/...)
+2. Fill the database
+    db_filler = FillDb(provider, factory_address, factory_abi, pair_abi, token_abi, 19043530, 19043540) db_filler.fill(TOKENS_TBL)
+    We prepare the factory address and all abi's in advance.
+    The call to all functions in swapget.py is requested when creating the database.
+    *Very resource-intensive process. For 10 (n) tokens and a depth of 10 (m), it takes about 10 minutes.
+    Asymptotic complexity O(n^2*m)*
+
+3. Run the functionality of find_cycles.py
+    cycleexp = CycleExplorer(TOKENS_TBL) data = cycleexp.find_positive_cycles_from_block_range(19043530, 19043540, 10)
+    last argument is the number of iterations to improve the accuracy of the optimal input value.
