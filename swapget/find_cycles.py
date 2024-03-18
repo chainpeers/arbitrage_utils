@@ -1,8 +1,8 @@
 import networkx as nx
 from arbitrage_utils.swapget.databases.pair_database import engine
 from typing import List, Optional
-from db_to_graph import create_graph_from_db
-from calculate import UniswapCalculator
+from arbitrage_utils.swapget.db_to_graph import create_graph_from_db
+from arbitrage_utils.swapget.calculate import UniswapCalculator
 from arbitrage_utils.swapget.databases.stat_database import add_chain_stat
 
 
@@ -37,12 +37,14 @@ class CycleExplorer:
 
     def multiply_edge_weights_of_one(self, graph: nx.DiGraph, cycle: Optional[List[str]],
                                      start_val_base: int) -> Optional[dict]:
+        if not cycle:
+            return None
         calc = UniswapCalculator()
         pool_array = []
-        first_is_base = cycle[0] != self.base_token
+        first_not_base = cycle[0] != self.base_token
 
         #  swap from base
-        if first_is_base:
+        if first_not_base:
             result = self._swap_token(self.base_token, cycle[0],
                                       val=start_val_base, calc=calc, graph=graph, pool_array=pool_array,
                                       edge_token=True)
@@ -59,7 +61,7 @@ class CycleExplorer:
                                           val=result, calc=calc, graph=graph, pool_array=pool_array)
 
         #  back to base
-        if first_is_base:
+        if first_not_base:
             result = self._swap_token(cycle[0], self.base_token,
                                       val=result, calc=calc, graph=graph, pool_array=pool_array,
                                       edge_token=True)
@@ -73,6 +75,8 @@ class CycleExplorer:
     def find_optimal_input_value(self, graph: nx.DiGraph, cycle: Optional[List[str]],
                                  bottom: float = 0, top: float = 10000, iterations: int = 10) -> list[dict, float]:
         curr = 0
+        middle = 0
+        result_mid = 0
         while curr < iterations:
             middle = (bottom + top) // 2
             result_mid = self.multiply_edge_weights_of_one(graph, cycle, middle)
@@ -90,13 +94,6 @@ class CycleExplorer:
             return [final_result, bottom]
         else:
             return [result_mid, middle]
-
-    def gather_all_info_in_block_range(self, start: int, end: int) -> None:
-        for block_number in range(start, end):
-            graph = create_graph_from_db(engine, str(block_number), self.token_tbl)
-            cycles = self.find_cycles(graph)
-            for cycle in cycles:
-                self.evaluate_cycle_for_all_tokens(cycle, graph, block_number)
 
     def find_positive_cycles_from_block_range(self, start: int, end: int, iterations: int = 50):
 
