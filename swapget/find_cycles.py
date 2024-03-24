@@ -1,9 +1,12 @@
 import networkx as nx
-from arbitrage_utils.swapget.databases.pair_database import engine
 from typing import List, Optional
-from arbitrage_utils.swapget.db_to_graph import create_graph_from_db
-from arbitrage_utils.swapget.calculate import UniswapCalculator
-from arbitrage_utils.swapget.databases.stat_database import add_chain_stat
+import sys
+import os
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+from databases.pair_database import engine
+from db_to_graph import create_graph_from_db
+from calculate import UniswapCalculator
+from databases.stat_database import add_chain_stat
 
 
 class CycleExplorer:
@@ -103,8 +106,8 @@ class CycleExplorer:
 
             for cycle in cycles:
                 result, base = self.find_optimal_input_value(graph, cycle, iterations=iterations)
-
-                if float(result[str(cycle)]["change"]) > base:
+                # print(result)
+                if float(result[str(cycle)]["change"]) > 0:
                     add_chain_stat(str(cycle), block_number, result[str(cycle)]["change"],
 
                                    base, result[str(cycle)]["result"], str(cycle[0]),

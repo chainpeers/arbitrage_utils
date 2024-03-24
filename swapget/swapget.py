@@ -1,6 +1,6 @@
 from web3 import Web3
 from web3.exceptions import BadFunctionCallOutput
-from arbitrage_utils.swapget.databases.pair_database import save_to_db
+from databases.pair_database import save_to_db
 
 
 class UniswapPair:
@@ -29,7 +29,6 @@ class UniswapPair:
                     pool_array.append([self.factory_contract.functions.getPool(token0_address, token1_address, fee).call(), fee])
 
             except Exception as e:
-
                 pass
 
         return pool_array if pool_array else -1
