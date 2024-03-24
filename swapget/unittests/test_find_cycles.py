@@ -158,17 +158,16 @@ class TestCycleExplorer(unittest.TestCase):
                           return_value={str(cycle): {'change': 10}}) as mock_multiply_edge_weights_of_one:
             graph = nx.DiGraph()
             result = instance.find_optimal_input_value(graph, cycle, iterations=2)
-
             expected_calls = [
                 unittest.mock.call(graph, cycle, 5000),
                 unittest.mock.call(graph, cycle, 10000),
                 unittest.mock.call(graph, cycle, 7500),
-                unittest.mock.call(graph, cycle, 5000),
+                unittest.mock.call(graph, cycle, 10000),
                 unittest.mock.call(graph, cycle, 7500)
             ]
             mock_multiply_edge_weights_of_one.assert_has_calls(expected_calls)
 
-            expected_result = [{str(cycle): {'change': 10}}, 2500]
+            expected_result = [{str(cycle): {'change': 10}}, 7500]
             self.assertEqual(result, expected_result)
 
 
