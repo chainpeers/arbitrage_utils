@@ -1,10 +1,13 @@
 import unittest
 from unittest.mock import patch
-from arbitrage_utils.swapget.find_cycles import CycleExplorer
-import networkx as nx
-from arbitrage_utils.swapget.calculate import UniswapCalculator
-import json
+import sys
 import os
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+from find_cycles import CycleExplorer
+import networkx as nx
+from calculate import UniswapCalculator
+import json
+
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 uniswap_pool_abi_path = os.path.join(base_dir, '..', 'abi')
@@ -145,3 +148,28 @@ class TestCycleExplorer(unittest.TestCase):
 
         self.assertIsNone(result)
         mock_swap_token.assert_not_called()
+
+    def test_find_optimal_input_value(self):
+
+        instance = CycleExplorer(self.TOKENS_TBL)
+        cycle = ['A', 'B', 'C', 'A']
+
+        with patch.object(CycleExplorer, 'multiply_edge_weights_of_one',
+                          return_value={str(cycle): {'change': 10}}) as mock_multiply_edge_weights_of_one:
+            graph = nx.DiGraph()
+            result = instance.find_optimal_input_value(graph, cycle, iterations=2)
+            expected_calls = [
+                unittest.mock.call(graph, cycle, 5000),
+                unittest.mock.call(graph, cycle, 10000),
+                unittest.mock.call(graph, cycle, 7500),
+                unittest.mock.call(graph, cycle, 10000),
+                unittest.mock.call(graph, cycle, 7500)
+            ]
+            mock_multiply_edge_weights_of_one.assert_has_calls(expected_calls)
+
+            expected_result = [{str(cycle): {'change': 10}}, 7500]
+            self.assertEqual(result, expected_result)
+
+
+if __name__ == '__main__':
+    unittest.main()

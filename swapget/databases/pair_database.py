@@ -2,7 +2,10 @@ from sqlalchemy import Column, String, BigInteger, create_engine, Float, Integer
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.compiler import compiles
-from arbitrage_utils.swapget.calculate import UniswapCalculator
+import sys
+import os
+sys.path.insert(1, os.path.join(sys.path[0], ''))
+from calculate import UniswapCalculator
 
 Base = declarative_base()
 

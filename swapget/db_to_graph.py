@@ -1,4 +1,5 @@
-from arbitrage_utils.swapget.databases.pair_database import ReservesData
+
+from databases.pair_database import ReservesData
 from sqlalchemy.orm import Session
 import networkx as nx
 

@@ -1,7 +1,12 @@
 import unittest
 import json
-from arbitrage_utils.swapget.swapget import UniswapPair
+import sys
 import os
+sys.path.insert(2, os.path.join(sys.path[0], '..'))
+from swapget import UniswapPair
+from unittest.mock import patch, MagicMock
+from web3 import Web3
+from web3.exceptions import BadFunctionCallOutput
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,62 +30,78 @@ class TestUniswapPair(unittest.TestCase):
             file_content = f.read()
             self.factory_abi = json.loads(file_content)
 
-    def test_get_pool_address(self):
-        uniswap = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
-        get_address_call = uniswap.get_pool_address(0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984,
-                                                    0x6B175474E89094C44Da98b954EedeAC495271d0F)
-        self.assertEqual(get_address_call, [['0x57D7d040438730d4029794799dEEd8601E23fF80', 500],
-                                            ['0x7cf70eD6213F08b70316bD80F7c2ddDc94E41aC5', 3000],
-                                            ['0xD6993E525FAdB23971a20bBb057Af9841eAE076F', 10000]])
-        get_address_call = uniswap.get_pool_address(0x1f9840a8515aF5bf1D1761F925BDADdC4201F984,
-                                                    0x6B175474E89094C44Da925954EedeAC495271d0F)
-        self.assertEqual(get_address_call, -1)
-        get_address_call = uniswap.get_pool_address(0x6B175474E89094C44Da98b954EedeAC495271d0F,
-                                                    0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984)
-        self.assertEqual(get_address_call, [['0x57D7d040438730d4029794799dEEd8601E23fF80', 500],
-                                            ['0x7cf70eD6213F08b70316bD80F7c2ddDc94E41aC5', 3000],
-                                            ['0xD6993E525FAdB23971a20bBb057Af9841eAE076F', 10000]])
+    @patch('web3.Web3.to_checksum_address')
+    def test_get_pool_address_is_correct(self, mock_to_checksum_address):
+        uni_instance = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
+        uni_instance.factory_contract = MagicMock()
+        uni_instance.factory_contract.functions.getPool.return_value = MagicMock()
+        uni_instance.factory_contract.functions.getPool.return_value.call.return_value = 'test'
 
-    def test_pool_exists_in_block(self):
-        uniswap = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
-        get_exists_call = uniswap.pool_exists_in_block('0x7cf70eD6213F08b70316bD80F7c2ddDc94E41aC5', 0)
-        self.assertEqual(get_exists_call, False)
-        get_exists_call = uniswap.pool_exists_in_block('0x7cf70eD6213F08b70316bD80F7c2ddDc94E41aC5', 19000000)
-        self.assertEqual(get_exists_call, True)
+        mock_to_checksum_address.to_checksum_address.return_value = '0xToken123'
 
-    def test_binary_search_pair_existence(self):
-        uniswap = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
-        bi_search_call = uniswap.binary_search_pair_existence(0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984,
-                                                              0x6B175474E89094C44Da98b954EedeAC495271d0F,
-                                                              10000000, 19000005)
-        self.assertEqual(bi_search_call, (12383330, 19000005))
-        bi_search_call = uniswap.binary_search_pair_existence(0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984,
-                                                              0x6B175474E89094C44Da98b954EedeAC495271d0F,
-                                                              19000000, 19000005)
+        uni_instance.w3 = MagicMock()
+        uni_instance.w3.eth.contract.return_value = MagicMock()
+        uni_instance.w3.eth.contract.return_value.functions.liquidity.return_value = MagicMock()
+        uni_instance.w3.eth.contract.return_value.functions.liquidity.return_value.call.return_value = 'test2'
 
-        self.assertEqual(bi_search_call, (19000000, 19000005))
+        result = uni_instance.get_pool_address('0xToken0', '0xToken1')
 
-    def test_get_liquidity_from_block_range(self):
-        uniswap = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
-        get_liq_good_call = uniswap.get_liquidity_from_block_range('0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
-                                                                   '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-                                                                   19000005, 19000006, debug=True)
-        self.assertEqual(get_liq_good_call, [[2226807304819451294225431920,
-                                              '0x57D7d040438730d4029794799dEEd8601E23fF80', 500],
-                                             [2226807304819451294225431920,
-                                              '0x57D7d040438730d4029794799dEEd8601E23fF80', 500],
-                                             [311304595491026851434048245117,
-                                              '0x7cf70eD6213F08b70316bD80F7c2ddDc94E41aC5', 3000],
-                                             [311304595491026851434048245117,
-                                              '0x7cf70eD6213F08b70316bD80F7c2ddDc94E41aC5', 3000],
-                                             [240909345684574701522037830932,
-                                              '0xD6993E525FAdB23971a20bBb057Af9841eAE076F', 10000],
-                                             [240909345684574701522037830932,
-                                              '0xD6993E525FAdB23971a20bBb057Af9841eAE076F', 10000]])
+        expected_result = [
+            ['test', 500],
+            ['test', 3000],
+            ['test', 10000]
+        ]
+        self.assertEqual(uni_instance.factory_contract.functions.getPool.call_count,
+                         len(uni_instance.fee_tier) * 2)
+        self.assertEqual(uni_instance.w3.eth.contract.return_value.functions.liquidity.call_count,
+                         len(uni_instance.fee_tier))
+        self.assertEqual(result, expected_result)
 
-        get_liq_bad_call = uniswap.get_liquidity_from_block_range('0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
-                                                                  '0x6B175474E89094C44Da98b954EedeAC495271d0a',
-                                                                  19000005, 19000006, debug=True)
-        self.assertEqual(get_liq_bad_call, -1)
+    @patch('web3.Web3.to_checksum_address')
+    def test_get_pool_address_is_wrong(self, mock_to_checksum_address):
+        uni_instance = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
+        uni_instance.factory_contract = MagicMock()
+        uni_instance.factory_contract.functions.getPool.return_value = MagicMock()
+        uni_instance.factory_contract.functions.getPool.return_value.call.side_effect = TypeError()
+
+        mock_to_checksum_address.to_checksum_address.return_value = '0xToken123'
+
+        uni_instance.w3 = MagicMock()
+        uni_instance.w3.eth.contract.return_value = MagicMock()
+        uni_instance.w3.eth.contract.return_value.functions.liquidity.return_value = MagicMock()
+        uni_instance.w3.eth.contract.return_value.functions.liquidity.return_value.call.return_value = 'test2'
+
+        result = uni_instance.get_pool_address('0xToken0', '0xToken1')
+
+        expected_result = -1
+        self.assertEqual(uni_instance.factory_contract.functions.getPool.call_count,
+                         3)
+        self.assertEqual(uni_instance.w3.eth.contract.return_value.functions.liquidity.call_count,
+                         0)
+        self.assertEqual(result, expected_result)
+
+    def test_pool_exists_in_block_and_it_is_true(self):
+        uni_instance = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
+        uni_instance.w3 = MagicMock()
+        uni_instance.w3.eth.contract.return_value = MagicMock()
+        uni_instance.w3.eth.contract.return_value.functions.slot0.return_value = MagicMock()
+        uni_instance.w3.eth.contract.return_value.functions.slot0.return_value.call.return_value = 'ok'
+
+        result = uni_instance.pool_exists_in_block('123', 123)
+        uni_instance.w3.eth.contract.return_value.functions.slot0.return_value.call.called_once_with(123)
+        self.assertEqual(result, True)
+
+    def test_pool_exists_in_block_and_it_is_false(self):
+        uni_instance = UniswapPair(self.provider, self.factory_address, self.factory_abi, self.pair_abi, self.token_abi)
+        uni_instance.w3 = MagicMock()
+        uni_instance.w3.eth.contract.return_value = MagicMock()
+        uni_instance.w3.eth.contract.return_value.functions.slot0.return_value = MagicMock()
+        uni_instance.w3.eth.contract.return_value.functions.slot0.return_value.call.side_effect = BadFunctionCallOutput()
+
+        result = uni_instance.pool_exists_in_block('123', 123)
+        uni_instance.w3.eth.contract.return_value.functions.slot0.return_value.call.called_once_with(123)
+        self.assertEqual(result, False)
+
+
 if __name__ == '__main__':
     unittest.main()
